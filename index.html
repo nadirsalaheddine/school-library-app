@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F9F8F6">
+<title>LYCÉE CENTRAL LIBRARY</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="splash"><div class="sp"><span data-i="logo" data-s="96"></span><div class="brand" dir="ltr">LYCÉE CENTRAL LIBRARY</div></div></div>
+
+<header class="hd glass">
+  <div class="brand" dir="ltr"><span data-i="logo" data-s="24"></span>LYCÉE CENTRAL LIBRARY</div>
+  <label class="srch"><span data-i="search" data-s="18"></span><input id="q" type="search" placeholder="ابحث بعنوان الكتاب أو المؤلف" aria-label="بحث"></label>
+  <div class="qa">
+    <button id="bFav" class="ib" data-i="heart" aria-label="المفضلة"></button>
+    <button id="bHist" class="ib" data-i="clock" aria-label="سجل طلباتي"></button>
+  </div>
+</header>
+
+<div class="ticker glass" aria-live="off"><div id="track" class="track"></div></div>
+<nav id="filters" class="filters" aria-label="التصنيفات"></nav>
+<main id="shelves"></main>
+<footer>صُمم وابتكر بشغف من طرف: نادر صلاح الدين</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
