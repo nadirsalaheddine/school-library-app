@@ -67,6 +67,7 @@ h2 svg{color:var(--acc)}
 .cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .hb{position:absolute;top:16px;inset-inline-end:16px;z-index:2;width:34px;height:34px;border-radius:50%;background:#ffffffd9;backdrop-filter:blur(8px);display:grid;place-items:center;color:var(--acc);box-shadow:0 2px 8px #0002}
 .hb.on{color:var(--bad)}.hb.on svg{fill:var(--bad)}
+.wl{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:var(--mut);margin-inline-start:6px}
 .meta{padding-top:10px}.meta h3{font-size:.95rem;line-height:1.4;margin:6px 0 2px}.meta p{font-size:.8rem;color:var(--mut)}
 .bd{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:999px}
 .bd.available{background:#10B9811f;color:#047857}.bd.borrowed{background:#E11D481a;color:#BE123C}.bd.coming_soon{background:#F59E0B26;color:#B45309}
@@ -142,21 +143,16 @@ footer{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(-
 
 <nav id="filters" class="filters" aria-label="التصنيفات"></nav>
 <main id="shelves"></main>
-<footer><span id="ft"></span><button id="adminOpen" class="ib" aria-label="دخول الإدارة"><span data-i="lock" data-s="18"></span></button></footer>
-
-<div id="adm" class="adm" hidden><div>
-  <div class="ah"><div class="brand" dir="ltr"><span class="logo" data-i="logo" data-s="20"></span>ADMIN</div><button id="admX" class="chip"><span data-i="x" data-s="16"></span> إغلاق</button></div>
-  <div id="app"></div>
-</div></div>
+<footer><span id="ft"></span><a href="admin.html" class="ib" aria-label="دخول الإدارة"><span data-i="lock" data-s="18"></span></a></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 /* ===== الإعدادات: ضع بيانات Supabase هنا (مفتاح anon عام بطبيعته، والحماية تتم عبر RLS) ===== */
 const CONFIG = {
-  SUPABASE_URL: 'https://foqydcmmvjaojarxhmxi.supabase.co/rest/v1/',
-  SUPABASE_ANON_KEY: 'sb_publishable_1X5_Mo4iePNXCuCd_w6mmQ_tW6flRX4',
+  SUPABASE_URL: '',
+  SUPABASE_ANON_KEY: '',
   LIBRARY_NAME: 'LYCÉE CENTRAL LIBRARY',
-  DESIGNER: 'Abahri Nadir Salaheddine'
+  DESIGNER: 'نادر صلاح الدين'
 };
 
 /* ===== أدوات عامة ===== */
@@ -215,14 +211,15 @@ const DEMO = [
   { id: 'd5', title: 'Les Misérables', author: 'Victor Hugo', language: 'Français', category: 'روايات', season: 'winter', status: 'borrowed' },
   { id: 'd6', title: 'قريباً: موسوعة العلوم', author: 'فريق التحرير', language: 'العربية', category: 'علوم', season: 'spring', status: 'coming_soon' }
 ];
-let books = [], favs = ld(KEY.f), hist = ld(KEY.h), flt = 'all', q = '';
+let books = [], favs = ld(KEY.f), hist = ld(KEY.h), flt = 'all', q = '', wl = {};
 
 const PAL = [['#9A6A44', '#5c3b22'], ['#2F5D50', '#1b3830'], ['#2B3A55', '#16203a'], ['#7A2E3A', '#4a1520'], ['#6B6B3A', '#40401f'], ['#4A4A52', '#26262c']];
 const pal = s => PAL[[...String(s)].reduce((a, c) => a + c.charCodeAt(0), 0) % PAL.length];
 const cover = b => { const [p, d] = pal(b.title); return `<div class="cv" style="--c1:${p};--c2:${d}"><div class="ft"><span>${esc(b.title)}</span><small>${esc(b.author)}</small></div>${b.cover_url ? `<img src="${esc(b.cover_url)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</div>`; };
 const badge = b => `<span class="bd ${b.status}">${ST[b.status]}</span>`;
+const wlTag = b => wl[b.id] ? `<span class="wl">${ic('clock', 13)}${wl[b.id]} في الانتظار</span>` : '';
 const stars = n => [1, 2, 3, 4, 5].map(i => `<span class="s ${i <= Math.round(n) ? 'on' : ''}">${ic('star', 16)}</span>`).join('');
-const card = b => `<article class="card glass" data-id="${b.id}" tabindex="0"><button class="hb ${favs.includes(b.id) ? 'on' : ''}" data-h="${b.id}" aria-label="المفضلة">${ic('heart', 18)}</button>${cover(b)}<div class="meta">${badge(b)}<h3>${esc(b.title)}</h3><p>${esc(b.author)}</p></div></article>`;
+const card = b => `<article class="card glass" data-id="${b.id}" tabindex="0"><button class="hb ${favs.includes(b.id) ? 'on' : ''}" data-h="${b.id}" aria-label="المفضلة">${ic('heart', 18)}</button>${cover(b)}<div class="meta">${badge(b)}${wlTag(b)}<h3>${esc(b.title)}</h3><p>${esc(b.author)}</p></div></article>`;
 
 function marquee(t) {
   const g = `<div class="g">${Array(4).fill(`<span>${esc(t)}</span>`).join('<i class="dot"></i>')}<i class="dot"></i></div>`;
@@ -230,13 +227,15 @@ function marquee(t) {
 }
 
 async function load() {
-  if (!db) { books = DEMO; marquee('وضع تجريبي: أضف SUPABASE_URL و SUPABASE_ANON_KEY في أعلى الملف لعرض بيانات المكتبة الحقيقية'); return render(); }
-  const [b, n] = await Promise.all([
+  if (!db) { books = DEMO; wl = { d2: 3, d5: 1 }; marquee('وضع تجريبي: أضف SUPABASE_URL و SUPABASE_ANON_KEY في أعلى الملف لعرض بيانات المكتبة الحقيقية'); return render(); }
+  const [b, n, w] = await Promise.all([
     db.from('books').select('*').order('created_at', { ascending: false }),
-    db.from('notices').select('*').eq('is_active', true).limit(1)
+    db.from('notices').select('*').eq('is_active', true).limit(1),
+    db.rpc('waitlist_counts')
   ]);
   if (b.error) toast('تعذر تحميل الكتب. تحقق من الاتصال وأعد المحاولة');
   books = b.data || [];
+  wl = Object.fromEntries((w.data || []).map(x => [x.book_id, +x.n]));
   const nt = n.data?.[0] || {};
   marquee([nt.marquee_text, nt.status_note].filter(Boolean).join('   ') || 'أهلاً بكم في مكتبتنا');
   render();
@@ -260,7 +259,7 @@ function render() {
 
 async function detail(id) {
   const b = books.find(x => x.id === id); if (!b) return;
-  const o = openSheet(`<div class="dt">${cover(b)}<div><h2>${esc(b.title)}</h2><p class="mut">${esc(b.author)}</p>${badge(b)}
+  const o = openSheet(`<div class="dt">${cover(b)}<div><h2>${esc(b.title)}</h2><p class="mut">${esc(b.author)}</p>${badge(b)}${wlTag(b)}
     <dl><dt>اللغة</dt><dd>${esc(b.language)}</dd><dt>التصنيف</dt><dd>${esc(b.category)}</dd>${SEASONS[b.season] ? `<dt>المجموعة</dt><dd>${SEASONS[b.season]}</dd>` : ''}</dl>
     <div id="avg" class="stars"></div></div></div>
     <div class="acts"><button class="btn ghost" id="fav"></button><button class="btn" id="req">${b.status === 'available' ? '+ طلب استعارة' : 'سلة الانتظار'}</button></div>
@@ -291,7 +290,7 @@ function toggleFav(id) { favs = favs.includes(id) ? favs.filter(x => x !== id) :
 
 function reqForm(b) {
   const last = hist[0] || {}, wait = b.status !== 'available';
-  const o = openSheet(`<h2>${wait ? 'سلة الانتظار' : 'طلب استعارة'}</h2><p class="mut">${esc(b.title)}</p>
+  const o = openSheet(`<h2>${wait ? 'سلة الانتظار' : 'طلب استعارة'}</h2><p class="mut">${esc(b.title)}</p>${wait ? `<p class="mut">عدد المنتظرين الآن: ${wl[b.id] || 0}</p>` : ''}
     <form id="rf" class="fm"><label>الاسم الكامل<input name="n" required maxlength="60" value="${esc(last.name)}"></label>
     <label>القسم / المستوى<input name="c" required maxlength="30" value="${esc(last.cls)}"></label>
     <label>تاريخ الطلب<input name="d" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label>
@@ -302,6 +301,7 @@ function reqForm(b) {
     if (db) { const { error } = await db.from('waitlist').insert(r); if (error) return toast('تعذر إرسال الطلب، أعد المحاولة'); }
     hist = [{ bid: b.id, title: b.title, name: r.student_name, cls: r.student_class, date: r.request_date, wait }, ...hist].slice(0, 50);
     sv(KEY.h, hist);
+    wl[b.id] = (wl[b.id] || 0) + 1; render();
     $$('.ov').forEach(x => x.remove());
     toast('لا تنسوا كتبكم لأننا لن ننساكم');
   };
@@ -326,114 +326,8 @@ $('#filters').onclick = e => { const c = e.target.closest('.chip'); if (c) { flt
 $('#q').oninput = e => { q = e.target.value.toLowerCase().trim(); render(); };
 $('#bFav').onclick = showFavs; $('#bHist').onclick = showHist;
 
-/* ===== لوحة الإدارة (داخل نفس الملف) ===== */
-const app = $('#app');
-const opt = (m, s) => Object.entries(m).map(([k, v]) => `<option value="${k}" ${k === s ? 'selected' : ''}>${v}</option>`).join('');
-
-async function openAdmin() {
-  $('#adm').hidden = false; document.body.style.overflow = 'hidden';
-  if (!db) { app.innerHTML = '<p class="empty">أضف SUPABASE_URL و SUPABASE_ANON_KEY في أعلى الملف لتفعيل لوحة الإدارة.</p>'; return; }
-  const { data: { session } } = await db.auth.getSession();
-  session ? dash() : login();
-}
-$('#adminOpen').onclick = openAdmin;
-$('#admX').onclick = () => { $('#adm').hidden = true; document.body.style.overflow = ''; load(); };
-
-function login() {
-  app.innerHTML = `<form id="lf" class="fm glass pad"><h2>دخول الإدارة</h2>
-    <label>البريد الإلكتروني<input name="e" type="email" required autocomplete="username"></label>
-    <label>كلمة المرور<input name="p" type="password" required autocomplete="current-password"></label><button class="btn">دخول</button></form>`;
-  $('#lf').onsubmit = async e => {
-    e.preventDefault(); const f = new FormData(e.target);
-    const { error } = await db.auth.signInWithPassword({ email: f.get('e'), password: f.get('p') });
-    error ? toast('البريد أو كلمة المرور غير صحيحة') : dash();
-  };
-}
-
-function dash() {
-  app.innerHTML = `<div class="tabs"><button class="chip on" data-t="b">الكتب</button><button class="chip" data-t="r">الطلبات المعلقة</button><button class="chip" data-t="n">إشعار اليوم</button><button class="chip" id="out">${ic('out', 16)} خروج</button></div><div id="pane"></div>`;
-  $('.tabs').onclick = e => {
-    const t = e.target.closest('[data-t]'); if (!t) return;
-    $$('.tabs .chip').forEach(x => x.classList.toggle('on', x === t));
-    ({ b: tBooks, r: tReqs, n: tNotice })[t.dataset.t]();
-  };
-  $('#out').onclick = async () => { await db.auth.signOut(); login(); };
-  tBooks();
-}
-
-async function tBooks() {
-  const pane = $('#pane');
-  const { data, error } = await db.from('books').select('*').order('created_at', { ascending: false });
-  if (error) toast('تعذر تحميل الكتب');
-  books = data || [];
-  pane.innerHTML = `<button class="btn" id="add">${ic('plus', 18)} إضافة كتاب</button><div class="list">${books.map(b => `
-    <div class="row glass" data-id="${b.id}"><div><b>${esc(b.title)}</b><p class="mut">${esc(b.author)}</p></div>
-    <div class="ctl"><select data-s aria-label="الحالة">${opt(ST, b.status)}</select>
-    <button class="ib ${b.is_pinned ? 'on' : ''}" data-a="pin" aria-label="تثبيت">${ic('pin')}</button>
-    <button class="ib" data-a="edit" aria-label="تعديل">${ic('edit')}</button>
-    <button class="ib" data-a="del" aria-label="حذف">${ic('trash')}</button></div></div>`).join('') || '<p class="empty">لا توجد كتب بعد. اضغط "إضافة كتاب" للبدء.</p>'}</div>`;
-  pane.onclick = async e => {
-    if (e.target.closest('#add')) return bookForm();
-    const r = e.target.closest('.row'), a = e.target.closest('[data-a]')?.dataset.a; if (!r || !a) return;
-    const b = books.find(x => x.id === r.dataset.id);
-    if (a === 'edit') return bookForm(b);
-    if (a === 'pin') await db.from('books').update({ is_pinned: !b.is_pinned }).eq('id', b.id);
-    if (a === 'del') { if (!confirm('حذف هذا الكتاب نهائياً؟')) return; await db.from('books').delete().eq('id', b.id); }
-    tBooks();
-  };
-  pane.onchange = async e => {
-    if (!e.target.dataset.s) return;
-    const { error } = await db.from('books').update({ status: e.target.value }).eq('id', e.target.closest('.row').dataset.id);
-    toast(error ? 'تعذر التحديث' : 'تم تحديث الحالة');
-  };
-}
-
-function bookForm(b = {}) {
-  const o = openSheet(`<h2>${b.id ? 'تعديل كتاب' : 'إضافة كتاب'}</h2><form id="bf" class="fm">
-    <label>رابط الغلاف (اختياري)<input name="cover_url" type="url" value="${esc(b.cover_url)}" dir="ltr"></label>
-    <label>العنوان<input name="title" required value="${esc(b.title)}"></label>
-    <label>المؤلف<input name="author" value="${esc(b.author)}"></label>
-    <label>اللغة<input name="language" value="${esc(b.language || 'العربية')}"></label>
-    <label>التصنيف<input name="category" value="${esc(b.category)}"></label>
-    <label>الموسم<select name="season">${opt({ all: 'كل المواسم', autumn: 'الخريف', winter: 'الشتاء', spring: 'الربيع' }, b.season)}</select></label>
-    <label>الحالة<select name="status">${opt(ST, b.status)}</select></label><button class="btn">حفظ الكتاب</button></form>`);
-  $('#bf', o).onsubmit = async e => {
-    e.preventDefault(); const v = Object.fromEntries(new FormData(e.target));
-    const { error } = b.id ? await db.from('books').update(v).eq('id', b.id) : await db.from('books').insert(v);
-    if (error) return toast('تعذر حفظ الكتاب، راجع الحقول وأعد المحاولة');
-    o.remove(); toast('تم حفظ الكتاب'); tBooks();
-  };
-}
-
-async function tReqs() {
-  const pane = $('#pane'); pane.onclick = pane.onchange = null;
-  const { data } = await db.from('waitlist').select('*,books(id,title)').order('request_date');
-  pane.innerHTML = `<div class="list">${(data || []).map(r => `<div class="row glass" data-id="${r.id}" data-b="${r.book_id}"><div><b>${esc(r.books?.title)}</b><p class="mut">${esc(r.student_name)} - ${esc(r.student_class)} - ${esc(r.request_date)}</p></div><button class="btn" data-a="ok">${ic('check', 18)} تأكيد التسليم</button></div>`).join('') || '<p class="empty">لا توجد طلبات معلقة الآن.</p>'}</div>`;
-  pane.onclick = async e => {
-    const r = e.target.closest('.row'); if (!r || !e.target.closest('[data-a=ok]')) return;
-    const u = await db.from('books').update({ status: 'borrowed' }).eq('id', r.dataset.b);
-    if (u.error) return toast('تعذر تحديث حالة الكتاب');
-    await db.from('waitlist').delete().eq('id', r.dataset.id);
-    toast('تم تسجيل الإعارة'); tReqs();
-  };
-}
-
-async function tNotice() {
-  const pane = $('#pane'); pane.onclick = pane.onchange = null;
-  const { data } = await db.from('notices').select('*').eq('is_active', true).limit(1);
-  const n = data?.[0] || {};
-  pane.innerHTML = `<form id="nf" class="fm glass pad"><label>شريط الإعلانات: ساعات الدوام وأيام الإغلاق<textarea name="marquee_text" rows="3">${esc(n.marquee_text)}</textarea></label>
-    <label>ملاحظة اليوم<textarea name="status_note" rows="2">${esc(n.status_note)}</textarea></label><button class="btn">نشر التحديث</button></form>`;
-  $('#nf').onsubmit = async e => {
-    e.preventDefault(); const v = Object.fromEntries(new FormData(e.target));
-    const { error } = n.id ? await db.from('notices').update(v).eq('id', n.id) : await db.from('notices').insert({ ...v, is_active: true });
-    toast(error ? 'تعذر النشر' : 'تم نشر التحديث');
-  };
-}
-
 /* ===== التشغيل ===== */
 load();
-if (location.hash === '#admin') openAdmin();
 if (db) db.channel('live').on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, load).on('postgres_changes', { event: '*', schema: 'public', table: 'books' }, load).subscribe();
 </script>
 </body>
