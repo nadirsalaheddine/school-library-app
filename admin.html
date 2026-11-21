@@ -121,8 +121,20 @@ function login() {
     <label>كلمة المرور<input name="p" type="password" required autocomplete="current-password"></label><button class="btn">دخول</button></form>`;
   $('#lf').onsubmit = async e => {
     e.preventDefault(); const f = new FormData(e.target);
-    const { error } = await db.auth.signInWithPassword({ email: f.get('e'), password: f.get('p') });
-    error ? toast('البريد أو كلمة المرور غير صحيحة') : dash();
+    const email = String(f.get('e') || '').trim();
+const password = String(f.get('p') || '');
+
+const { error } = await db.auth.signInWithPassword({
+  email,
+  password
+});
+
+if (error) {
+  console.error('Login error:', error);
+  toast(error.message);
+} else {
+  dash();
+}
   };
 }
 
