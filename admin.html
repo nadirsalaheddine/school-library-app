@@ -59,7 +59,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ===== ضع نفس بيانات Supabase المستخدمة في index.html ===== */
-const CONFIG = { SUPABASE_URL: 'https://foqydcmmvjaojarxhmxi.supabase.co', SUPABASE_ANON_KEY: 'sb_publishable_1X5_Mo4iePNXCuCd_w6mmQ_tW6flRX4q', LIBRARY_NAME: 'LYCÉE CENTRAL LIBRARY' };
+const CONFIG = { SUPABASE_URL: 'https://foqydcmmvjaojarxhmxi.supabase.co', SUPABASE_ANON_KEY: 'sb_publishable_1X5_Mo4iePNXCuCd_w6mmQ_tW6flRX4', LIBRARY_NAME: 'LYCÉE CENTRAL LIBRARY' };
 
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const db = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase ? supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
